@@ -3,6 +3,8 @@ require_once '../../includes/header.php';
 
 // Fetch Roles for Dropdown
 $roles = $pdo->query("SELECT * FROM sys_roles")->fetchAll();
+$programs = $pdo->query("SELECT * FROM programs ORDER BY name")->fetchAll();
+$semesters = $pdo->query("SELECT s.*, p.name as prog_name FROM semesters s JOIN programs p ON s.program_id = p.id ORDER BY p.name, s.number")->fetchAll();
 
 // Handle Add User
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
@@ -10,13 +12,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $email = $_POST['email'];
     $role = $_POST['role'];
     $pass = password_hash('123456', PASSWORD_DEFAULT); // Default pass
+    $program_id = (isset($_POST['program_id']) && $_POST['program_id'] !== '') ? $_POST['program_id'] : null;
+    $semester_id = (isset($_POST['semester_id']) && $_POST['semester_id'] !== '') ? $_POST['semester_id'] : null;
     
-    $stmt = $pdo->prepare("INSERT INTO users (name, email, role, password) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO users (name, email, role, password, program_id, semester_id) VALUES (?, ?, ?, ?, ?, ?)");
     try {
-        $stmt->execute([$name, $email, $role, $pass]);
+        $stmt->execute([$name, $email, $role, $pass, $program_id, $semester_id]);
         $_SESSION['success_msg'] = "User added successfully!";
     } catch(Exception $e) { 
-        $_SESSION['error_msg'] = "Email already exists."; 
+        $_SESSION['error_msg'] = "Error: " . $e->getMessage(); 
     }
     echo "<script>window.location.href='manage_users.php';</script>";
     exit;
@@ -28,10 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     $name = $_POST['name'];
     $email = $_POST['email'];
     $role = $_POST['role'];
+    $program_id = (isset($_POST['program_id']) && $_POST['program_id'] !== '') ? $_POST['program_id'] : null;
+    $semester_id = (isset($_POST['semester_id']) && $_POST['semester_id'] !== '') ? $_POST['semester_id'] : null;
     
-    $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, role = ?, program_id = ?, semester_id = ? WHERE id = ?");
     try {
-        $stmt->execute([$name, $email, $role, $id]);
+        $stmt->execute([$name, $email, $role, $program_id, $semester_id, $id]);
         $_SESSION['success_msg'] = "User updated successfully!";
     } catch(Exception $e) { 
         $_SESSION['error_msg'] = "Error updating user."; 
@@ -122,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_status'])) {
                         </td>
                         <td class="text-end pe-4">
                             <button class="btn btn-sm btn-icon text-primary border-0 me-2" 
-                                    onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['name']) ?>', '<?= htmlspecialchars($u['email']) ?>', '<?= $u['role'] ?>')">
+                                    onclick="openEditModal(<?= $u['id'] ?>, '<?= htmlspecialchars($u['name']) ?>', '<?= htmlspecialchars($u['email']) ?>', '<?= $u['role'] ?>', '<?= $u['program_id'] ?>', '<?= $u['semester_id'] ?>')">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
                             <form method="POST" class="d-inline" onsubmit="return confirm('Really delete this user?');">
@@ -159,12 +165,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_status'])) {
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">System Role</label>
-                    <select name="role" class="form-select bg-light border-0 py-2" required>
+                    <select name="role" id="add_role_select" class="form-select bg-light border-0 py-2" required onchange="toggleStudentFields(this.value, 'add')">
                         <?php foreach($roles as $r): ?>
                             <option value="<?= $r['role_key'] ?>"><?= $r['role_name'] ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
+                
+                <div id="add_student_fields" style="display:none;">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Program</label>
+                        <select name="program_id" class="form-select bg-light border-0 py-2">
+                            <option value="">-- Select Program --</option>
+                            <?php foreach($programs as $p): ?>
+                                <option value="<?= $p['id'] ?>"><?= $p['name'] ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Semester</label>
+                        <select name="semester_id" class="form-select bg-light border-0 py-2">
+                            <option value="">-- Select Semester --</option>
+                            <?php foreach($semesters as $s): ?>
+                                <option value="<?= $s['id'] ?>"><?= $s['prog_name'] ?> - Sem <?= $s['number'] ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
                 <p class="text-muted smallest italic mt-2">Default password for new users is: <b>123456</b></p>
             </div>
             <div class="modal-footer border-0 p-4">
@@ -194,12 +222,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_status'])) {
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">System Role</label>
-                    <select name="role" id="edit_user_role" class="form-select bg-light border-0 py-2" required>
+                    <select name="role" id="edit_user_role" class="form-select bg-light border-0 py-2" required onchange="toggleStudentFields(this.value, 'edit')">
                         <?php foreach($roles as $r): ?>
                             <option value="<?= $r['role_key'] ?>"><?= $r['role_name'] ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
+                
+                <div id="edit_student_fields" style="display:none;">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Program</label>
+                        <select name="program_id" id="edit_program_id" class="form-select bg-light border-0 py-2">
+                            <option value="">-- Select Program --</option>
+                            <?php foreach($programs as $p): ?>
+                                <option value="<?= $p['id'] ?>"><?= $p['name'] ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Semester</label>
+                        <select name="semester_id" id="edit_semester_id" class="form-select bg-light border-0 py-2">
+                            <option value="">-- Select Semester --</option>
+                            <?php foreach($semesters as $s): ?>
+                                <option value="<?= $s['id'] ?>"><?= $s['prog_name'] ?> - Sem <?= $s['number'] ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
             </div>
             <div class="modal-footer border-0 p-4">
                 <button type="submit" name="update_user" class="btn btn-primary rounded-pill px-4">Update Changes</button>
@@ -209,14 +259,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_status'])) {
 </div>
 
 <script>
-function openEditModal(id, name, email, role) {
+function toggleStudentFields(role, type) {
+    if(role === 'student') {
+        document.getElementById(type + '_student_fields').style.display = 'block';
+    } else {
+        document.getElementById(type + '_student_fields').style.display = 'none';
+    }
+}
+
+function openEditModal(id, name, email, role, program_id, semester_id) {
     document.getElementById('edit_user_id').value = id;
     document.getElementById('edit_user_name').value = name;
     document.getElementById('edit_user_email').value = email;
     document.getElementById('edit_user_role').value = role;
+    
+    document.getElementById('edit_program_id').value = program_id || '';
+    document.getElementById('edit_semester_id').value = semester_id || '';
+    
+    toggleStudentFields(role, 'edit');
+    
     var modal = new bootstrap.Modal(document.getElementById('editUserModal'));
     modal.show();
 }
+
+// Ensure proper display on load for Add modal if student happens to be selected initially
+document.addEventListener('DOMContentLoaded', function() {
+    toggleStudentFields(document.getElementById('add_role_select').value, 'add');
+});
 </script>
 
 <?php require_once '../../includes/footer.php'; ?>

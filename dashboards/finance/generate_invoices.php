@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_invoices']))
                 $check = $pdo->prepare("SELECT id FROM invoices WHERE user_id = ? AND semester_id = ? AND invoice_type = 'academic'");
                 $check->execute([$s['id'], $semester_id]);
                 if ($check->rowCount() == 0) {
-                    $invStmt = $pdo->prepare("INSERT INTO invoices (user_id, semester_id, invoice_type, total_base_amount, discount_amount, payable_amount, balance_due, due_date, status) VALUES (?, ?, 'academic', ?, ?, ?, ?, ?, 'unpaid')");
+                    $invStmt = $pdo->prepare("INSERT INTO invoices (user_id, semester_id, invoice_type, total_base_amount, discount_amount, payable_amount, balance_due, due_date, status) VALUES (?, ?, 'academic', ?, ?, ?, ?, ?, 'draft')");
                     $invStmt->execute([$s['id'], $semester_id, $academic_base, $academic_discount, $academic_payable, $academic_payable, $due_date]);
                     $count++;
                 }
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_invoices']))
                 $checkH = $pdo->prepare("SELECT id FROM invoices WHERE user_id = ? AND semester_id = ? AND invoice_type = 'hostel'");
                 $checkH->execute([$s['id'], $semester_id]);
                 if ($checkH->rowCount() == 0) {
-                    $invStmtH = $pdo->prepare("INSERT INTO invoices (user_id, semester_id, invoice_type, total_base_amount, discount_amount, payable_amount, balance_due, due_date, status) VALUES (?, ?, 'hostel', ?, 0, ?, ?, ?, 'unpaid')");
+                    $invStmtH = $pdo->prepare("INSERT INTO invoices (user_id, semester_id, invoice_type, total_base_amount, discount_amount, payable_amount, balance_due, due_date, status) VALUES (?, ?, 'hostel', ?, 0, ?, ?, ?, 'draft')");
                     $invStmtH->execute([$s['id'], $semester_id, $hostel_base, $hostel_base, $hostel_base, $due_date]);
                     $count++;
                 }

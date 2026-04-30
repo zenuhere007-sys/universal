@@ -42,11 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_request'])) {
         
         // Redirect to specific modules if needed
         if ($status === 'approved') {
-             if ($_POST['req_logic_type'] === 'scholarship') {
+             if ($req['request_type'] === 'scholarship') {
                  $_SESSION['success_msg'] .= " Please assign the scholarship now.";
                  echo "<script>window.location.href='manage_scholarships.php';</script>";
                  exit;
-             } elseif ($_POST['req_logic_type'] === 'installment') {
+             } elseif ($req['request_type'] === 'installment') {
                  $_SESSION['success_msg'] .= " Please setup the installment plan now.";
                  echo "<script>window.location.href='installments.php';</script>";
                  exit;
