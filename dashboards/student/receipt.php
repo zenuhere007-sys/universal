@@ -16,6 +16,10 @@ $inv = $stmt->fetch();
 $payments = $pdo->prepare("SELECT * FROM payments WHERE invoice_id = ?");
 $payments->execute([$inv_id]);
 $history = $payments->fetchAll();
+
+$instStmt = $pdo->prepare("SELECT * FROM installments WHERE invoice_id = ? ORDER BY installment_no");
+$instStmt->execute([$inv_id]);
+$installments = $instStmt->fetchAll();
 ?>
 
 <div class="container bg-white p-5 border shadow-sm mt-4" id="receiptArea">
@@ -63,6 +67,24 @@ $history = $payments->fetchAll();
             <?php endforeach; ?>
         </tbody>
     </table>
+
+    <?php if(!empty($installments)): ?>
+    <h5 class="mt-4">Approved Installment Schedule</h5>
+    <table class="table table-sm table-bordered">
+        <thead class="table-light"><tr><th>Installment</th><th>Due Date</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+            <?php foreach($installments as $inst): ?>
+            <tr>
+                <td>Installment #<?= $inst['installment_no'] ?></td>
+                <td><?= date('d M Y', strtotime($inst['due_date'])) ?></td>
+                <td><span class="badge <?= $inst['status']=='paid'?'bg-success':'bg-warning text-dark' ?> text-uppercase"><?= $inst['status'] ?></span></td>
+                <td class="text-end">PKR <?= number_format($inst['amount'], 2) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <p class="text-muted small mt-1"><i class="bi bi-info-circle-fill me-1"></i> You must pay each installment before its due date to avoid late fines.</p>
+    <?php endif; ?>
 
     <div class="text-end mt-5">
         <h4 class="text-danger">Balance Due: PKR <?= number_format($inv['balance_due'], 2) ?></h4>

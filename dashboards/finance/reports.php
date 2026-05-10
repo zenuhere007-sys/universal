@@ -9,6 +9,13 @@ $collection_rate = $total_target > 0 ? ($total_collected / $total_target) * 100 
 
 $def_count = $pdo->query("SELECT COUNT(DISTINCT user_id) FROM invoices WHERE balance_due > 0")->fetchColumn() ?: 0;
 
+// 1.5 System Counts for Overview
+$total_students = $pdo->query("SELECT COUNT(*) FROM users WHERE role='student'")->fetchColumn() ?: 0;
+$total_vouchers = $pdo->query("SELECT COUNT(*) FROM invoices")->fetchColumn() ?: 0;
+$total_scholarships = $pdo->query("SELECT COUNT(*) FROM user_scholarships")->fetchColumn() ?: 0;
+$total_installments = $pdo->query("SELECT COUNT(DISTINCT invoice_id) FROM installments")->fetchColumn() ?: 0;
+
+
 // 2. Program-wise Revenue Data for Chart
 $program_data = $pdo->query("
     SELECT p.name, SUM(inv.payable_amount) as total_target, SUM(inv.payable_amount - inv.balance_due) as collected 
@@ -108,6 +115,42 @@ foreach($cat_data as $cd) {
                 <h6 class="text-white text-opacity-75 small text-uppercase fw-bold">Current Target</h6>
                 <h3 class="fw-bold mb-2">M <?= number_format($total_target / 1000000, 2) ?></h3>
                 <p class="mb-0 small">Based on active semester billing</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Row 2: System Overviews (Counts) -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-white h-100 shadow-sm" style="border-radius: 16px; border-left: 5px solid #0d6efd;">
+            <div class="card-body">
+                <h6 class="text-muted small text-uppercase fw-bold mb-1">Registered Students</h6>
+                <h3 class="fw-bold text-dark mb-0"><?= number_format($total_students) ?> <i class="bi bi-people text-primary float-end opacity-50"></i></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-white h-100 shadow-sm" style="border-radius: 16px; border-left: 5px solid #6f42c1;">
+            <div class="card-body">
+                <h6 class="text-muted small text-uppercase fw-bold mb-1">Generated Vouchers</h6>
+                <h3 class="fw-bold text-dark mb-0"><?= number_format($total_vouchers) ?> <i class="bi bi-receipt text-purple float-end opacity-50" style="color: #6f42c1;"></i></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-white h-100 shadow-sm" style="border-radius: 16px; border-left: 5px solid #fd7e14;">
+            <div class="card-body">
+                <h6 class="text-muted small text-uppercase fw-bold mb-1">Active Installments</h6>
+                <h3 class="fw-bold text-dark mb-0"><?= number_format($total_installments) ?> <i class="bi bi-calendar-range text-warning float-end opacity-50" style="color: #fd7e14;"></i></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-white h-100 shadow-sm" style="border-radius: 16px; border-left: 5px solid #198754;">
+            <div class="card-body">
+                <h6 class="text-muted small text-uppercase fw-bold mb-1">Scholarships Awarded</h6>
+                <h3 class="fw-bold text-dark mb-0"><?= number_format($total_scholarships) ?> <i class="bi bi-award text-success float-end opacity-50"></i></h3>
             </div>
         </div>
     </div>

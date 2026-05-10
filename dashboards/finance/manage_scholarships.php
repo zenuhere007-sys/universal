@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['award_scholarship']))
         
         // --- AUTO RE-SYNC INVOICES ---
         // Find existing unpaid academic invoices for this student
-        $invStmt = $pdo->prepare("SELECT * FROM invoices WHERE user_id = ? AND status = 'unpaid' AND invoice_type = 'academic'");
+        $invStmt = $pdo->prepare("SELECT * FROM invoices WHERE user_id = ? AND status IN ('unpaid', 'draft') AND invoice_type = 'academic'");
         $invStmt->execute([$user_id]);
         $active_invoices = $invStmt->fetchAll();
         
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_award'])) {
         $updUser->execute([$user_id]);
         
         // --- AUTO RE-SYNC INVOICES (Back to Full Amount) ---
-        $invStmt = $pdo->prepare("SELECT * FROM invoices WHERE user_id = ? AND status = 'unpaid' AND invoice_type = 'academic'");
+        $invStmt = $pdo->prepare("SELECT * FROM invoices WHERE user_id = ? AND status IN ('unpaid', 'draft') AND invoice_type = 'academic'");
         $invStmt->execute([$user_id]);
         $active_invoices = $invStmt->fetchAll();
         
